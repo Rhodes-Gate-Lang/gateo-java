@@ -18,10 +18,10 @@ Maven Central publishing is not set up in this repository yet; releases attach t
 
 ```bash
 mvn install:install-file \
-  -Dfile=gateo-java-2.0.1.jar \
-  -DpomFile=gateo-java-2.0.1.pom \
-  -Dsources=gateo-java-2.0.1-sources.jar \
-  -Djavadoc=gateo-java-2.0.1-javadoc.jar
+  -Dfile=gateo-java-2.0.2.jar \
+  -DpomFile=gateo-java-2.0.2.pom \
+  -Dsources=gateo-java-2.0.2-sources.jar \
+  -Djavadoc=gateo-java-2.0.2-javadoc.jar
 ```
 
 ## Quickstart
@@ -48,7 +48,7 @@ The vendored schema is **gateo-schema [v2.0.1](https://github.com/Rhodes-Gate-La
 
 - **Unknown protobuf fields** are ignored when parsing to generated types, but mapping into the **native** `com.rhodesgatelang.gateo.v2` model does not preserve them on round-trip (same caveat as gateo-cpp).
 - **`Gateo.write(Path, …)`** creates parent directories if needed.
-- **`validateBasic`** runs on read (after the version gate) and on write; failures throw **`GateoValidationException`**.
+- **`validateBasic`** runs on read (after the version gate) and on write: only light structural checks (non-empty graph, in-range indices, no self-referential operands). It does not enforce per-gate input counts or strict topological order, so newer compiler output stays loadable. Failures throw **`GateoValidationException`**.
 
 ## Building
 

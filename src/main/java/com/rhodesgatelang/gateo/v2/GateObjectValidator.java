@@ -3,15 +3,17 @@ package com.rhodesgatelang.gateo.v2;
 import com.rhodesgatelang.gateo.GateoValidationException;
 import java.util.List;
 
-/** Basic structural validation for native {@link GateObject} graphs. */
+/**
+ * Lightweight structural checks for native {@link GateObject} graphs: non-empty graph, in-range
+ * indices, and no self-referential node operands. Deliberately does <em>not</em> enforce gate arity
+ * or topological order so early compiler output can still be loaded.
+ */
 public final class GateObjectValidator {
 
   private GateObjectValidator() {}
 
   /**
-   * Validates ordering, indexing, and minimal arity constraints implied by {@code gateo.v2}.
-   *
-   * @throws GateoValidationException when the object is structurally invalid
+   * @throws GateoValidationException when the object fails basic structural checks
    */
   public static void validateBasic(GateObject object) {
     Version version = object.version();
@@ -42,14 +44,12 @@ public final class GateObjectValidator {
     if (nodes.isEmpty()) {
       throw new GateoValidationException("nodes must be non-empty");
     }
+    int nodeCount = nodes.size();
 
-    for (int i = 0; i < nodes.size(); i++) {
+    for (int i = 0; i < nodeCount; i++) {
       Node node = nodes.get(i);
       if (node.type() == GateType.UNSPECIFIED) {
         throw new GateoValidationException("node " + i + " has UNSPECIFIED gate type");
-      }
-      if (node.width() <= 0) {
-        throw new GateoValidationException("node " + i + " must have width > 0");
       }
       int parent = node.parent();
       if (parent < 0 || parent >= components.size()) {
@@ -59,60 +59,22 @@ public final class GateObjectValidator {
       List<Integer> inputs = node.inputs();
       for (int inIdx = 0; inIdx < inputs.size(); inIdx++) {
         int operand = inputs.get(inIdx);
-        if (operand < 0 || operand >= i) {
+        if (operand < 0 || operand >= nodeCount) {
           throw new GateoValidationException(
               "node "
                   + i
                   + " input "
                   + inIdx
-                  + " must reference an earlier node index (< "
-                  + i
+                  + " must reference a valid node index in [0, "
+                  + nodeCount
                   + "), got "
                   + operand);
         }
-      }
-
-      validateArity(node.type(), inputs.size(), i);
-
-      if (node.type() == GateType.LITERAL && node.literalValue().isEmpty()) {
-        throw new GateoValidationException("LITERAL node " + i + " must provide literalValue");
-      }
-    }
-  }
-
-  private static void validateArity(GateType type, int inputCount, int nodeIndex) {
-    switch (type) {
-      case INPUT -> {
-        if (inputCount != 0) {
+        if (operand == i) {
           throw new GateoValidationException(
-              "INPUT node " + nodeIndex + " must have zero inputs, got " + inputCount);
+              "node " + i + " input " + inIdx + " cannot reference itself");
         }
       }
-      case LITERAL -> {
-        if (inputCount != 0) {
-          throw new GateoValidationException(
-              "LITERAL node " + nodeIndex + " must have zero inputs, got " + inputCount);
-        }
-      }
-      case OUTPUT -> {
-        if (inputCount < 1) {
-          throw new GateoValidationException(
-              "OUTPUT node " + nodeIndex + " must have at least one input");
-        }
-      }
-      case AND, OR, XOR -> {
-        if (inputCount < 2) {
-          throw new GateoValidationException(
-              type + " node " + nodeIndex + " must have at least two inputs");
-        }
-      }
-      case NOT -> {
-        if (inputCount != 1) {
-          throw new GateoValidationException(
-              "NOT node " + nodeIndex + " must have exactly one input, got " + inputCount);
-        }
-      }
-      case UNSPECIFIED -> throw new AssertionError("handled earlier");
     }
   }
 }

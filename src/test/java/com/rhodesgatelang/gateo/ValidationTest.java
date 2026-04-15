@@ -1,5 +1,6 @@
 package com.rhodesgatelang.gateo;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.rhodesgatelang.gateo.v2.ComponentInstance;
@@ -18,7 +19,24 @@ import org.junit.jupiter.api.Test;
 class ValidationTest {
 
   @Test
-  void validateBasicRejectsBadTopology() {
+  void validateBasicRejectsEmptyComponents() {
+    GateObject bad =
+        new GateObject(
+            new Version(2, 0),
+            List.of(),
+            List.of(
+                new Node(
+                    GateType.INPUT,
+                    List.of(),
+                    1,
+                    0,
+                    Optional.empty(),
+                    OptionalLong.empty())));
+    assertThrows(GateoValidationException.class, () -> GateObjectValidator.validateBasic(bad));
+  }
+
+  @Test
+  void validateBasicRejectsOutOfRangeOperand() {
     GateObject bad =
         new GateObject(
             new Version(2, 0),
@@ -33,7 +51,7 @@ class ValidationTest {
                     OptionalLong.empty()),
                 new Node(
                     GateType.OUTPUT,
-                    List.of(),
+                    List.of(99),
                     1,
                     0,
                     Optional.empty(),
@@ -42,12 +60,36 @@ class ValidationTest {
   }
 
   @Test
-  void writeRejectsInvalidObject() throws Exception {
+  void validateBasicRejectsSelfOperand() {
     GateObject bad =
         new GateObject(
             new Version(2, 0),
             List.of(new ComponentInstance("Mod", 0)),
             List.of(
+                new Node(
+                    GateType.OUTPUT,
+                    List.of(0),
+                    1,
+                    0,
+                    Optional.empty(),
+                    OptionalLong.empty())));
+    assertThrows(GateoValidationException.class, () -> GateObjectValidator.validateBasic(bad));
+  }
+
+  @Test
+  void writeAndReadAllowLenientInputOperands() throws Exception {
+    GateObject graph =
+        new GateObject(
+            new Version(2, 0),
+            List.of(new ComponentInstance("Mod", 0)),
+            List.of(
+                new Node(
+                    GateType.INPUT,
+                    List.of(),
+                    1,
+                    0,
+                    Optional.empty(),
+                    OptionalLong.empty()),
                 new Node(
                     GateType.INPUT,
                     List.of(0),
@@ -55,8 +97,12 @@ class ValidationTest {
                     0,
                     Optional.empty(),
                     OptionalLong.empty())));
-    Path file = Files.createTempFile("bad", ".gateo");
-    assertThrows(GateoValidationException.class, () -> Gateo.write(file, bad));
-    Files.deleteIfExists(file);
+    Path file = Files.createTempFile("lenient", ".gateo");
+    try {
+      Gateo.write(file, graph);
+      assertEquals(graph, Gateo.read(file));
+    } finally {
+      Files.deleteIfExists(file);
+    }
   }
 }
