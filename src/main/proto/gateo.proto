@@ -1,0 +1,58 @@
+// Gate Object Schema — v2
+//
+// Flat, topologically sorted gate DAG plus a component instance tree.
+// Ports are not separate messages: INPUT/OUTPUT nodes act as boundary renamers.
+
+syntax = "proto3";
+
+package gateo.v2;
+
+option optimize_for = SPEED;
+
+message GateObject {
+  Version version = 1;
+
+  // Instance tree by parent index. Index 0 is always the root; components[0].name
+  // is the compiled component type (this file’s module). Root uses parent == 0.
+  repeated ComponentInstance components = 2;
+
+  // Topologically sorted: for every node at index i, each entry in inputs is < i.
+  repeated Node nodes = 3;
+}
+
+message Version {
+  uint32 major = 1;
+  uint32 minor = 2;
+}
+
+enum GateType {
+  GATE_TYPE_UNSPECIFIED = 0;
+  GATE_TYPE_INPUT = 1;
+  GATE_TYPE_OUTPUT = 2;
+  GATE_TYPE_AND = 3;
+  GATE_TYPE_OR = 4;
+  GATE_TYPE_XOR = 5;
+  GATE_TYPE_NOT = 6;
+  GATE_TYPE_LITERAL = 7;
+}
+
+message Node {
+  GateType type = 1;
+  // Operand indices into nodes; must all be < this node’s index. Empty for root INPUT.
+  repeated uint32 inputs = 2 [packed = true];
+  uint32 width = 3;
+  // Owning instance index into GateObject.components.
+  uint32 parent = 4;
+  // Optional signal name (e.g. formal parameter or return). Root formals should be named for tools.
+  optional string name = 5;
+  // Used when type == LITERAL; otherwise ignore.
+  optional uint64 literal_value = 6;
+}
+
+message ComponentInstance {
+  // Component type name (e.g. HalfAdder). Synthetic instance labels may derive from
+  // declaration order among siblings (same parent), not from this string.
+  string name = 1;
+  // Parent instance index. Root (index 0) uses parent == 0 (self).
+  uint32 parent = 2;
+}

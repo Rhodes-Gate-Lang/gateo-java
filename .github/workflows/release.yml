@@ -1,0 +1,64 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+
+permissions:
+  contents: write
+
+jobs:
+  verify-schema-pin:
+    runs-on: ubuntu-latest
+    env:
+      SCHEMA_URL: https://github.com/Rhodes-Gate-Lang/gateo-schema/releases/download/v2.0.1/gateo-schema-v2.0.1.zip
+      SCHEMA_SHA256: d96f18d7abfaa49542667ed9175fc2e295b72ae08278c66ad05a5d57a039344f
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify pinned schema zip checksum
+        run: |
+          set -euo pipefail
+          curl -fsSL "$SCHEMA_URL" -o gateo-schema.zip
+          ACTUAL="$(sha256sum gateo-schema.zip | awk '{print $1}')"
+          if [ "$ACTUAL" != "$SCHEMA_SHA256" ]; then
+            echo "Checksum mismatch for gateo-schema-v2.0.1.zip"
+            echo "expected=$SCHEMA_SHA256"
+            echo "actual=$ACTUAL"
+            exit 1
+          fi
+
+  release:
+    needs: verify-schema-pin
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Resolve library version from tag
+        id: ver
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="${TAG#v}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "ORG_GRADLE_PROJECT_gateoJavaVersion=$VERSION" >> "$GITHUB_ENV"
+      - name: Build and generate POM
+        run: |
+          ./gradlew build generatePomFileForMavenJavaPublication --no-daemon
+      - name: Stage release artifacts
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.ver.outputs.version }}"
+          mkdir -p release-staging
+          cp "build/libs/gateo-java-${VERSION}.jar" release-staging/
+          cp "build/libs/gateo-java-${VERSION}-sources.jar" release-staging/
+          cp "build/libs/gateo-java-${VERSION}-javadoc.jar" release-staging/
+          cp build/publications/mavenJava/pom-default.xml "release-staging/gateo-java-${VERSION}.pom"
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release-staging/*
