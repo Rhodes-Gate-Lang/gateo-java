@@ -1,15 +1,15 @@
-package com.rhodesgatelang.gateo.v2.internal;
+package com.rhodesgatelang.gateo.v3.internal;
 
-import com.rhodesgatelang.gateo.v2.ComponentInstance;
-import com.rhodesgatelang.gateo.v2.GateObject;
-import com.rhodesgatelang.gateo.v2.Node;
-import com.rhodesgatelang.gateo.v2.Version;
-import gateo.v2.Gateo;
+import com.rhodesgatelang.gateo.v3.ComponentInstance;
+import com.rhodesgatelang.gateo.v3.GateObject;
+import com.rhodesgatelang.gateo.v3.Node;
+import com.rhodesgatelang.gateo.v3.Version;
+import gateo.v3.Gateo;
 
-/** Converts the native model into generated {@code gateo.v2} protobuf messages. */
-public final class V2ToProto {
+/** Converts the native model into generated {@code gateo.v3} protobuf messages. */
+public final class V3ToProto {
 
-  private V2ToProto() {}
+  private V3ToProto() {}
 
   public static Gateo.GateObject convert(GateObject object) {
     Gateo.GateObject.Builder root = Gateo.GateObject.newBuilder();
@@ -29,7 +29,8 @@ public final class V2ToProto {
               .setWidth(n.width())
               .setParent(n.parent());
       n.name().ifPresent(nb::setName);
-      n.literalValue().ifPresent(nb::setLiteralValue);
+      n.value().ifPresent(nb::setValue);
+      n.splitLo().ifPresent(nb::setSplitLo);
       root.addNodes(nb);
     }
 

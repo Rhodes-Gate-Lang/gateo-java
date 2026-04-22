@@ -1,12 +1,13 @@
-package com.rhodesgatelang.gateo.v2;
+package com.rhodesgatelang.gateo.v3;
 
 import com.rhodesgatelang.gateo.GateoValidationException;
 import java.util.List;
 
 /**
  * Lightweight structural checks for native {@link GateObject} graphs: non-empty graph, in-range
- * indices, and no self-referential node operands. Deliberately does <em>not</em> enforce gate arity
- * or topological order so early compiler output can still be loaded.
+ * indices, no self-referential node operands, and v3 bus-operation constraints. Deliberately does
+ * <em>not</em> enforce full gate arity for legacy types or strict topological order so early
+ * compiler output can still be loaded.
  */
 public final class GateObjectValidator {
 
@@ -75,6 +76,71 @@ public final class GateObjectValidator {
               "node " + i + " input " + inIdx + " cannot reference itself");
         }
       }
+
+      validateBusOps(object, i, node);
+    }
+  }
+
+  private static void validateBusOps(GateObject object, int i, Node node) {
+    List<Node> nodes = object.nodes();
+    switch (node.type()) {
+      case SPLIT -> {
+        if (node.inputs().size() != 1) {
+          throw new GateoValidationException(
+              "node " + i + " SPLIT must have exactly one input, got " + node.inputs().size());
+        }
+        if (node.splitLo().isEmpty()) {
+          throw new GateoValidationException("node " + i + " SPLIT requires split_lo");
+        }
+        int splitLo = node.splitLo().getAsInt();
+        if (splitLo < 0) {
+          throw new GateoValidationException("node " + i + " SPLIT split_lo must be non-negative");
+        }
+        int inW = nodes.get(node.inputs().get(0)).width();
+        if ((long) splitLo + node.width() > inW) {
+          throw new GateoValidationException(
+              "node "
+                  + i
+                  + " SPLIT range [split_lo, split_lo+width) exceeds input width "
+                  + inW);
+        }
+      }
+      case MERGE -> {
+        if (node.inputs().size() < 2) {
+          throw new GateoValidationException(
+              "node " + i + " MERGE must have at least two inputs, got " + node.inputs().size());
+        }
+        int sum = 0;
+        for (int idx : node.inputs()) {
+          sum += nodes.get(idx).width();
+        }
+        if (sum != node.width()) {
+          throw new GateoValidationException(
+              "node "
+                  + i
+                  + " MERGE output width "
+                  + node.width()
+                  + " must equal sum of input widths "
+                  + sum);
+        }
+      }
+      case LSL, LSR -> {
+        if (node.inputs().size() != 2) {
+          throw new GateoValidationException(
+              "node "
+                  + i
+                  + " "
+                  + node.type()
+                  + " must have exactly two inputs, got "
+                  + node.inputs().size());
+        }
+        Node shiftAmount = nodes.get(node.inputs().get(1));
+        if (shiftAmount.type() != GateType.LITERAL) {
+          throw new GateoValidationException(
+              "node " + i + " " + node.type() + " second operand must be a LITERAL node");
+        }
+      }
+      default -> {}
     }
   }
 }

@@ -8,19 +8,19 @@ class VersionMismatchTest {
 
   @Test
   void rejectsUnsupportedMajor() {
-    gateo.v2.Gateo.GateObject proto =
-        gateo.v2.Gateo.GateObject.newBuilder()
-            .setVersion(gateo.v2.Gateo.Version.newBuilder().setMajor(1).setMinor(0))
-            .addComponents(gateo.v2.Gateo.ComponentInstance.newBuilder().setName("X").setParent(0))
+    gateo.v3.Gateo.GateObject proto =
+        gateo.v3.Gateo.GateObject.newBuilder()
+            .setVersion(gateo.v3.Gateo.Version.newBuilder().setMajor(2).setMinor(0))
+            .addComponents(gateo.v3.Gateo.ComponentInstance.newBuilder().setName("X").setParent(0))
             .addNodes(
-                gateo.v2.Gateo.Node.newBuilder()
-                    .setType(gateo.v2.Gateo.GateType.GATE_TYPE_INPUT)
+                gateo.v3.Gateo.Node.newBuilder()
+                    .setType(gateo.v3.Gateo.GateType.GATE_TYPE_INPUT)
                     .setWidth(1)
                     .setParent(0)
                     .setName("a"))
             .addNodes(
-                gateo.v2.Gateo.Node.newBuilder()
-                    .setType(gateo.v2.Gateo.GateType.GATE_TYPE_OUTPUT)
+                gateo.v3.Gateo.Node.newBuilder()
+                    .setType(gateo.v3.Gateo.GateType.GATE_TYPE_OUTPUT)
                     .addInputs(0)
                     .setWidth(1)
                     .setParent(0))

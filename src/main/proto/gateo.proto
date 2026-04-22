@@ -1,11 +1,13 @@
-// Gate Object Schema — v2
+// Gate Object Schema — v3
 //
 // Flat, topologically sorted gate DAG plus a component instance tree.
+// v3 adds bus operations over v2: SPLIT (slice), MERGE (concat), LSL and LSR
+// (logical shifts). Sequential logic (registers) is planned for v4.
 // Ports are not separate messages: INPUT/OUTPUT nodes act as boundary renamers.
 
 syntax = "proto3";
 
-package gateo.v2;
+package gateo.v3;
 
 option optimize_for = SPEED;
 
@@ -13,7 +15,7 @@ message GateObject {
   Version version = 1;
 
   // Instance tree by parent index. Index 0 is always the root; components[0].name
-  // is the compiled component type (this file’s module). Root uses parent == 0.
+  // is the compiled component type (this file's module). Root uses parent == 0.
   repeated ComponentInstance components = 2;
 
   // Topologically sorted: for every node at index i, each entry in inputs is < i.
@@ -27,26 +29,53 @@ message Version {
 
 enum GateType {
   GATE_TYPE_UNSPECIFIED = 0;
-  GATE_TYPE_INPUT = 1;
-  GATE_TYPE_OUTPUT = 2;
-  GATE_TYPE_AND = 3;
-  GATE_TYPE_OR = 4;
-  GATE_TYPE_XOR = 5;
-  GATE_TYPE_NOT = 6;
-  GATE_TYPE_LITERAL = 7;
+  GATE_TYPE_INPUT       = 1;  // Component input boundary  (root: arity 0; nested: arity 1)
+  GATE_TYPE_OUTPUT      = 2;  // Component output boundary (arity 1)
+  GATE_TYPE_AND         = 3;  // Bitwise AND  (arity 2; all widths equal)
+  GATE_TYPE_OR          = 4;  // Bitwise OR   (arity 2; all widths equal)
+  GATE_TYPE_XOR         = 5;  // Bitwise XOR  (arity 2; all widths equal)
+  GATE_TYPE_NOT         = 6;  // Bitwise NOT  (arity 1; output width == input width)
+  GATE_TYPE_LITERAL     = 7;  // Constant; payload in Node.literal_value (arity 0)
+  // v3: bus operations
+  GATE_TYPE_SPLIT       = 8;  // Bus slice    (arity 1): inputs[0][split_lo : split_lo+width),
+                               //   MSB-first indexing (bit 0 is the most significant bit).
+  GATE_TYPE_MERGE       = 9;  // Bus concat   (arity >= 2): {inputs[0], inputs[1], ...} with
+                               //   inputs[0] as most significant; output width = sum of input widths.
+  GATE_TYPE_LSL         = 10; // Logical shift left  (arity 2): inputs[0] << inputs[1],
+                               //   zero-fill, truncate to inputs[0] width; inputs[1] must be LITERAL.
+  GATE_TYPE_LSR         = 11; // Logical shift right (arity 2): inputs[0] >> inputs[1],
+                               //   zero-fill, truncate to inputs[0] width; inputs[1] must be LITERAL.
 }
 
 message Node {
   GateType type = 1;
-  // Operand indices into nodes; must all be < this node’s index. Empty for root INPUT.
+
+  // Operand indices into GateObject.nodes; all must be < this node's own index.
+  // Empty for root INPUT and LITERAL nodes.
   repeated uint32 inputs = 2 [packed = true];
+
+  // Bit-width of the signal produced by this node. Always >= 1.
   uint32 width = 3;
+
   // Owning instance index into GateObject.components.
   uint32 parent = 4;
-  // Optional signal name (e.g. formal parameter or return). Root formals should be named for tools.
+
+  // Signal name. Required for root INPUT and OUTPUT nodes (used by name-based tools).
+  // Anonymous intermediate nodes may omit it.
   optional string name = 5;
-  // Used when type == LITERAL; otherwise ignore.
-  optional uint64 literal_value = 6;
+
+  // Dual-purpose value field:
+  //   - type == LITERAL: set by the compiler to the constant payload, unsigned,
+  //     interpreted by width. Maximum representable width is 64 bits.
+  //   - All types: written back by the simulator after each run to record the
+  //     signal's current computed value. External tooling reads this field to
+  //     inspect node states without re-evaluating the graph.
+  optional uint64 value = 6;
+
+  // Used when type == SPLIT: starting bit index of the extracted range, MSB-first
+  // (index 0 is the most significant bit). Extracted range is [split_lo, split_lo + width).
+  // Ignored for all other node types.
+  optional uint32 split_lo = 7;
 }
 
 message ComponentInstance {

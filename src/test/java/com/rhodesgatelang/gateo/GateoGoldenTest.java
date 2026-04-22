@@ -2,7 +2,7 @@ package com.rhodesgatelang.gateo;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.rhodesgatelang.gateo.v2.GateObject;
+import com.rhodesgatelang.gateo.v3.GateObject;
 import java.io.InputStream;
 import org.junit.jupiter.api.Test;
 

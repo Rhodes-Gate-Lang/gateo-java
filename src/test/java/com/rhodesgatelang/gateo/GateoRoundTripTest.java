@@ -2,16 +2,9 @@ package com.rhodesgatelang.gateo;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.rhodesgatelang.gateo.v2.ComponentInstance;
-import com.rhodesgatelang.gateo.v2.GateObject;
-import com.rhodesgatelang.gateo.v2.GateType;
-import com.rhodesgatelang.gateo.v2.Node;
-import com.rhodesgatelang.gateo.v2.Version;
+import com.rhodesgatelang.gateo.v3.GateObject;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
-import java.util.Optional;
-import java.util.OptionalLong;
 import org.junit.jupiter.api.Test;
 
 class GateoRoundTripTest {
@@ -34,5 +27,29 @@ class GateoRoundTripTest {
     } finally {
       Files.deleteIfExists(file);
     }
+  }
+
+  @Test
+  void roundTripSplit() {
+    GateObject g = Fixtures.splitBus();
+    assertEquals(g, Gateo.read(Gateo.toBytes(g)));
+  }
+
+  @Test
+  void roundTripMerge() {
+    GateObject g = Fixtures.mergeBus();
+    assertEquals(g, Gateo.read(Gateo.toBytes(g)));
+  }
+
+  @Test
+  void roundTripLsl() {
+    GateObject g = Fixtures.lslBus();
+    assertEquals(g, Gateo.read(Gateo.toBytes(g)));
+  }
+
+  @Test
+  void roundTripLsr() {
+    GateObject g = Fixtures.lsrBus();
+    assertEquals(g, Gateo.read(Gateo.toBytes(g)));
   }
 }

@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "com.rhodesgatelang"
-version = providers.gradleProperty("gateoJavaVersion").getOrElse("2.0.2-SNAPSHOT")
+version = providers.gradleProperty("gateoJavaVersion").getOrElse("3.0.0-SNAPSHOT")
 
 repositories {
     mavenCentral()
@@ -66,7 +66,7 @@ publishing {
             version = project.version.toString()
             pom {
                 name.set("gateo-java")
-                description.set("Java library for reading and writing .gateo gate objects (protobuf wire format gateo.v2).")
+                description.set("Java library for reading and writing .gateo gate objects (protobuf wire format gateo.v3).")
                 url.set("https://github.com/Rhodes-Gate-Lang/gateo-java")
                 licenses {
                     license {

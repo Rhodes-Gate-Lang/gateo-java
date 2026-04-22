@@ -1,20 +1,21 @@
-package com.rhodesgatelang.gateo.v2.internal;
+package com.rhodesgatelang.gateo.v3.internal;
 
-import com.rhodesgatelang.gateo.v2.ComponentInstance;
-import com.rhodesgatelang.gateo.v2.GateObject;
-import com.rhodesgatelang.gateo.v2.GateType;
-import com.rhodesgatelang.gateo.v2.Node;
-import com.rhodesgatelang.gateo.v2.Version;
-import gateo.v2.Gateo;
+import com.rhodesgatelang.gateo.v3.ComponentInstance;
+import com.rhodesgatelang.gateo.v3.GateObject;
+import com.rhodesgatelang.gateo.v3.GateType;
+import com.rhodesgatelang.gateo.v3.Node;
+import com.rhodesgatelang.gateo.v3.Version;
+import gateo.v3.Gateo;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.OptionalLong;
 
-/** Converts generated {@code gateo.v2} protobuf messages into the native model. */
-public final class V2FromProto {
+/** Converts generated {@code gateo.v3} protobuf messages into the native model. */
+public final class V3FromProto {
 
-  private V2FromProto() {}
+  private V3FromProto() {}
 
   public static GateObject convert(Gateo.GateObject proto) {
     Version version =
@@ -28,12 +29,12 @@ public final class V2FromProto {
     List<Node> nodes = new ArrayList<>(proto.getNodesCount());
     for (Gateo.Node n : proto.getNodesList()) {
       List<Integer> inputs = new ArrayList<>(n.getInputsCount());
-      for (int i = 0; i < n.getInputsCount(); i++) {
-        inputs.add(n.getInputs(i));
+      for (int j = 0; j < n.getInputsCount(); j++) {
+        inputs.add(n.getInputs(j));
       }
       Optional<String> name = n.hasName() ? Optional.of(n.getName()) : Optional.empty();
-      OptionalLong literal =
-          n.hasLiteralValue() ? OptionalLong.of(n.getLiteralValue()) : OptionalLong.empty();
+      OptionalLong value = n.hasValue() ? OptionalLong.of(n.getValue()) : OptionalLong.empty();
+      OptionalInt splitLo = n.hasSplitLo() ? OptionalInt.of(n.getSplitLo()) : OptionalInt.empty();
       nodes.add(
           new Node(
               GateType.fromProto(n.getType()),
@@ -41,7 +42,8 @@ public final class V2FromProto {
               n.getWidth(),
               n.getParent(),
               name,
-              literal));
+              value,
+              splitLo));
     }
 
     return new GateObject(version, components, nodes);

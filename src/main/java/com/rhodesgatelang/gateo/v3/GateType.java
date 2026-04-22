@@ -1,8 +1,8 @@
-package com.rhodesgatelang.gateo.v2;
+package com.rhodesgatelang.gateo.v3;
 
-import gateo.v2.Gateo;
+import gateo.v3.Gateo;
 
-/** Native gate node kind; mirrors {@code gateo.v2.GateType} without exposing generated protobuf types. */
+/** Native gate node kind; mirrors {@code gateo.v3.GateType} without exposing generated protobuf types. */
 public enum GateType {
   UNSPECIFIED,
   INPUT,
@@ -11,7 +11,11 @@ public enum GateType {
   OR,
   XOR,
   NOT,
-  LITERAL;
+  LITERAL,
+  SPLIT,
+  MERGE,
+  LSL,
+  LSR;
 
   public static GateType fromProto(Gateo.GateType proto) {
     return switch (proto) {
@@ -23,6 +27,10 @@ public enum GateType {
       case GATE_TYPE_XOR -> XOR;
       case GATE_TYPE_NOT -> NOT;
       case GATE_TYPE_LITERAL -> LITERAL;
+      case GATE_TYPE_SPLIT -> SPLIT;
+      case GATE_TYPE_MERGE -> MERGE;
+      case GATE_TYPE_LSL -> LSL;
+      case GATE_TYPE_LSR -> LSR;
       case UNRECOGNIZED -> throw new IllegalArgumentException("Unrecognized gate type wire value");
     };
   }
@@ -37,6 +45,10 @@ public enum GateType {
       case XOR -> Gateo.GateType.GATE_TYPE_XOR;
       case NOT -> Gateo.GateType.GATE_TYPE_NOT;
       case LITERAL -> Gateo.GateType.GATE_TYPE_LITERAL;
+      case SPLIT -> Gateo.GateType.GATE_TYPE_SPLIT;
+      case MERGE -> Gateo.GateType.GATE_TYPE_MERGE;
+      case LSL -> Gateo.GateType.GATE_TYPE_LSL;
+      case LSR -> Gateo.GateType.GATE_TYPE_LSR;
     };
   }
 }

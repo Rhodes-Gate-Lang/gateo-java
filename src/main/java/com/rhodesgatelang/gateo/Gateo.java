@@ -1,9 +1,9 @@
 package com.rhodesgatelang.gateo;
 
-import com.rhodesgatelang.gateo.v2.GateObject;
-import com.rhodesgatelang.gateo.v2.GateObjectValidator;
-import com.rhodesgatelang.gateo.v2.internal.V2FromProto;
-import com.rhodesgatelang.gateo.v2.internal.V2ToProto;
+import com.rhodesgatelang.gateo.v3.GateObject;
+import com.rhodesgatelang.gateo.v3.GateObjectValidator;
+import com.rhodesgatelang.gateo.v3.internal.V3FromProto;
+import com.rhodesgatelang.gateo.v3.internal.V3ToProto;
 import com.google.protobuf.InvalidProtocolBufferException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -12,13 +12,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * Entry point for reading and writing {@code .gateo} files: raw serialized {@code gateo.v2.GateObject}
+ * Entry point for reading and writing {@code .gateo} files: raw serialized {@code gateo.v3.GateObject}
  * bytes, matching gateo-cpp wire behavior.
  */
 public final class Gateo {
 
-  /** Schema major version supported by this library (wire {@code gateo.v2}). */
-  public static final int SUPPORTED_SCHEMA_MAJOR = 2;
+  /** Schema major version supported by this library (wire {@code gateo.v3}). */
+  public static final int SUPPORTED_SCHEMA_MAJOR = 3;
 
   private Gateo() {}
 
@@ -41,7 +41,7 @@ public final class Gateo {
    */
   public static GateObject read(InputStream in, boolean closeStream) throws GateoIOException {
     try {
-      gateo.v2.Gateo.GateObject proto = gateo.v2.Gateo.GateObject.parseFrom(in);
+      gateo.v3.Gateo.GateObject proto = gateo.v3.Gateo.GateObject.parseFrom(in);
       return fromProto(proto);
     } catch (InvalidProtocolBufferException e) {
       throw new GateoParseException("Invalid .gateo protobuf payload", e);
@@ -61,13 +61,13 @@ public final class Gateo {
   /** Parses a gate object from its on-wire bytes. */
   public static GateObject read(byte[] data) {
     try {
-      return fromProto(gateo.v2.Gateo.GateObject.parseFrom(data));
+      return fromProto(gateo.v3.Gateo.GateObject.parseFrom(data));
     } catch (InvalidProtocolBufferException e) {
       throw new GateoParseException("Invalid .gateo protobuf payload", e);
     }
   }
 
-  private static GateObject fromProto(gateo.v2.Gateo.GateObject proto) {
+  private static GateObject fromProto(gateo.v3.Gateo.GateObject proto) {
     if (!proto.hasVersion()) {
       throw new GateoParseException("GateObject missing version");
     }
@@ -76,7 +76,7 @@ public final class Gateo {
       throw new VersionException(
           "Unsupported schema major " + major + "; expected " + SUPPORTED_SCHEMA_MAJOR);
     }
-    GateObject model = V2FromProto.convert(proto);
+    GateObject model = V3FromProto.convert(proto);
     GateObjectValidator.validateBasic(model);
     return model;
   }
@@ -110,7 +110,7 @@ public final class Gateo {
   public static void write(OutputStream out, GateObject object, boolean closeStream)
       throws GateoIOException {
     GateObjectValidator.validateBasic(object);
-    gateo.v2.Gateo.GateObject proto = V2ToProto.convert(object);
+    gateo.v3.Gateo.GateObject proto = V3ToProto.convert(object);
     try {
       proto.writeTo(out);
     } catch (IOException e) {
@@ -129,6 +129,6 @@ public final class Gateo {
   /** Returns the on-wire protobuf bytes for {@code object}. */
   public static byte[] toBytes(GateObject object) {
     GateObjectValidator.validateBasic(object);
-    return V2ToProto.convert(object).toByteArray();
+    return V3ToProto.convert(object).toByteArray();
   }
 }

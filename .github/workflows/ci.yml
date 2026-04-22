@@ -13,8 +13,8 @@ jobs:
   verify-schema-pin:
     runs-on: ubuntu-latest
     env:
-      SCHEMA_URL: https://github.com/Rhodes-Gate-Lang/gateo-schema/releases/download/v2.0.1/gateo-schema-v2.0.1.zip
-      SCHEMA_SHA256: d96f18d7abfaa49542667ed9175fc2e295b72ae08278c66ad05a5d57a039344f
+      SCHEMA_URL: https://github.com/Rhodes-Gate-Lang/gateo-schema/releases/download/v3.0.0/gateo-schema-v3.0.0.zip
+      SCHEMA_SHA256: ccf83ed8b4e7fb5990ef399f818232ab2c156ec73d4d5d5ef48072ac3946ca89
     steps:
       - uses: actions/checkout@v4
       - name: Verify pinned schema zip checksum
@@ -23,7 +23,7 @@ jobs:
           curl -fsSL "$SCHEMA_URL" -o gateo-schema.zip
           ACTUAL="$(sha256sum gateo-schema.zip | awk '{print $1}')"
           if [ "$ACTUAL" != "$SCHEMA_SHA256" ]; then
-            echo "Checksum mismatch for gateo-schema-v2.0.1.zip"
+            echo "Checksum mismatch for gateo-schema-v3.0.0.zip"
             echo "expected=$SCHEMA_SHA256"
             echo "actual=$ACTUAL"
             exit 1
